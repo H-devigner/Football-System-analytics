@@ -1,0 +1,73 @@
+services:
+  zookeeper:
+    image: library/zookeeper:3.9.2
+    container_name: zookeeper-football
+    ports:
+      - "2181:2181"
+    networks:
+      - app-network
+
+  kafka:
+    image: confluentinc/cp-kafka
+    container_name: kafka-football
+    ports:
+      - "9092:9092"
+      - "29092:29092"
+    environment:
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:29092,PLAINTEXT_HOST://localhost:9092
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+    depends_on:
+      - zookeeper
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    networks:
+      - app-network
+
+  python-scripts-spark:
+    build: ./python-scripts/spark-scripts
+    container_name: python-scripts-spark
+    volumes:
+      - ./python-scripts:/spark-scripts
+      - ./jars:/app/jars  # Mounting jars directory to container
+    environment:
+      - PYSPARK_SUBMIT_ARGS=--master local[*] pyspark-shell
+    depends_on:
+      - kafka
+    networks:
+      - app-network
+
+  python-scripts-kafka:
+    build: ./python-scripts/kafka-scripts
+    container_name: python-scripts-kafka
+    volumes:
+      - ./python-scripts:/kafka-scripts
+      - ./.env:/kafka-scripts/.env
+    depends_on:
+      - kafka
+    networks:
+      - app-network
+
+  mysql-db:
+    image: mysql:8.0
+    container_name: mysql-football
+    environment:
+      MYSQL_ROOT_PASSWORD: houcine
+      MYSQL_USER: houcine
+      MYSQL_PASSWORD: houcine
+      MYSQL_DATABASE: football
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    networks:
+      - app-network
+
+volumes:
+  mysql_data:  # Named volume for MySQL data persistence
+
+networks:
+  app-network:
+    driver: bridge
