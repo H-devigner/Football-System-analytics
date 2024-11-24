@@ -8,7 +8,7 @@ from dotenv import load_dotenv
 API_URL = 'http://api.football-data.org/v4/'
 API_KEY = os.getenv('API_KEY')
 KAFKA_BROKER = 'kafka:29092'  # Match the Kafka bootstrap server from the consumer script
-KAFKA_TOPIC = 'input-topic'
+KAFKA_TOPIC = os.getenv('INPUT_TOPIC_NAME')
 
 # Initialize Kafka producer
 producer = KafkaProducer(
