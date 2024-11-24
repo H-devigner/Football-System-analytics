@@ -1,44 +1,76 @@
-import { useState, useEffect } from 'react'
-import axios from 'axios'
-import './App.css'
-// import Index from './components/Index'
+import React, { useEffect, useState } from "react";
+import {
+   fetchCompetitions,
+   fetchTeams,
+   fetchPlayers,
+   fetchMatches,
+} from "./api";
 
-function App() {
-  const [messages, setMessages] = useState([])
+const Dashboard = () => {
+   const [competitions, setCompetitions] = useState([]);
+   const [teams, setTeams] = useState([]);
+   const [players, setPlayers] = useState([]);
+   const [matches, setMatches] = useState([]);
 
-  const url = 'http://localhost:8001/message'
+   useEffect(() => {
+       const loadData = async () => {
+           const competitionsData = await fetchCompetitions();
+           const teamsData = await fetchTeams();
+           const playersData = await fetchPlayers();
+           const matchesData = await fetchMatches();
 
-  const getMessages = async () => {
-    try {
-      const response = await axios.get(url)
-      setMessages(response.data)
-    } catch (error) {
-      console.log('error: ' + error)
-    }
-  }
+           setCompetitions(competitionsData.data);
+           setTeams(teamsData.data);
+           setPlayers(playersData.data);
+           setMatches(matchesData.data);
+       };
 
-  useEffect(() => {
-    getMessages()
-    const interval = setInterval(getMessages, 2000)
-    return () => clearInterval(interval)
-  }, [])
+       loadData();
+   }, []);
 
+   return (
+       <div className="dashboard">
+           <h1>Football Analytics Dashboard</h1>
 
-  return (
-    <>
-    <h1>Current Messages From the Database: </h1>
-    {messages && messages.length > 0 && (messages.map(message => (
-      <div key={message.id}>
-        <p>id: {message.id}</p>
-        <p>Message: {message.message}</p>
-      </div>
-    ))) || (
-      <div>
-        No messages yet!
-      </div>
-    )}
-    </>
-  )
-}
+           <section>
+               <h2>Competitions</h2>
+               <ul>
+                   {competitions.map((competition) => (
+                       <li key={competition.id}>{competition.name}</li>
+                   ))}
+               </ul>
+           </section>
 
-export default App
+           <section>
+               <h2>Teams</h2>
+               <ul>
+                   {teams.map((team) => (
+                       <li key={team.id}>{team.name}</li>
+                   ))}
+               </ul>
+           </section>
+
+           <section>
+               <h2>Players</h2>
+               <ul>
+                   {players.map((player) => (
+                       <li key={player.id}>{player.name}</li>
+                   ))}
+               </ul>
+           </section>
+
+           <section>
+               <h2>Matches</h2>
+               <ul>
+                   {matches.map((match) => (
+                       <li key={match.id}>
+                           {match.home_team.name} vs {match.away_team.name}
+                       </li>
+                   ))}
+               </ul>
+           </section>
+       </div>
+   );
+};
+
+export default Dashboard;
