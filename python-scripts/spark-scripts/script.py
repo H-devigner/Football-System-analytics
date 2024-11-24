@@ -7,16 +7,23 @@ import os
 
 
 #kafka environment variables
-INPUT_TOPIC = os.getenv('INPUT_TOPIC_NAME')
-OUTPUT_TOPIC = os.getenv('OUTPUT_TOPIC_NAME')
+# INPUT_TOPIC = os.getenv('INPUT_TOPIC_NAME')
+INPUT_TOPIC = "input-topic"
+# OUTPUT_TOPIC = os.getenv('OUTPUT_TOPIC_NAME')
+# OUTPUT_TOPIC = os.getenv('OUTPUT_TOPIC_NAME')
 
 # Mysql connection details
 DATABASE_HOST = "mysql-football"
 DATABASE_PORT = "3306"
 # Environment variables
-DATABASE_NAME = os.getenv(DATABASE_NAME)
-DATABASE_USER = os.getenv(DATABASE_USER)
-DATABASE_PASSWORD = os.getenv(DATABASE_PASSWORD)
+# DATABASE_NAME = os.getenv('DATABASE_NAME')
+DATABASE_NAME = "football"
+
+# DATABASE_USER = os.getenv('DATABASE_USER')
+DATABASE_USER = "houcine"
+
+# DATABASE_PASSWORD = os.getenv('DATABASE_PASSWORD')
+DATABASE_PASSWORD = "houcine"
 
 # Initialize Spark session
 spark = SparkSession.builder \
@@ -32,7 +39,7 @@ kafka_df = spark \
     .readStream \
     .format("kafka") \
     .option("kafka.bootstrap.servers", "kafka:29092") \
-    .option("subscribe", INPUT_TOPIC) \
+    .option("subscribe", "input-topic") \
     .load()
 
 # Process the Kafka stream
