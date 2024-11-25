@@ -1,9 +1,7 @@
-import mysql.connector
 from pyspark.sql import SparkSession
 from pyspark.sql.functions import *
 from pyspark.sql.types import *
 from pyspark.sql.window import Window
-import pandas as pd
 
 class SeasonAnalyticsProcessor:
     def __init__(self):
@@ -14,39 +12,17 @@ class SeasonAnalyticsProcessor:
             .enableHiveSupport() \
             .getOrCreate()
 
-    def load_data_from_mysql(self, table_name):
-        """Load data from MySQL into a Spark DataFrame using mysql.connector."""
-        try:
-            # Establish connection
-            conn = mysql.connector.connect(
-                host="localhost",
-                port=3306,
-                user="houcine",
-                password="houcine",
-                database="football"
-            )
-            # Load data into a pandas DataFrame
-            query = f"SELECT * FROM {table_name}"
-            pandas_df = pd.read_sql(query, con=conn)
-
-            # Convert pandas DataFrame to Spark DataFrame
-            spark_df = self.spark.createDataFrame(pandas_df)
-
-            conn.close()
-            return spark_df
-        except mysql.connector.Error as e:
-            print(f"Error connecting to MySQL: {e}")
-            return None
-
     def process_season_statistics(self, season):
-        # Load historical match data
-        matches_df = self.load_data_from_mysql("football")
-        if matches_df is None:
-            print("Failed to load data from MySQL.")
-            return
-
-        # Filter data for the specified season
-        matches_df = matches_df.where(col("season") == season)
+        # Read historical match data
+        matches_df = self.spark.read \
+            .format("jdbc") \
+            .option("url", "jdbc:mysql://localhost:3306/football_analytics") \
+            .option("driver", "com.mysql.cj.jdbc.Driver") \
+            .option("dbtable", "historical_matches") \
+            .option("user", "your_username") \
+            .option("password", "your_password") \
+            .load() \
+            .where(col("season") == season)
 
         # Calculate team performance metrics
         team_performances = matches_df \
@@ -82,12 +58,12 @@ class SeasonAnalyticsProcessor:
 
         form_df.write \
             .mode("overwrite") \
-            .saveAsTable("django_app_seasonteamperformances")
+            .saveAsTable("season_team_form")
 
     def calculate_advanced_metrics(self, season):
-        """Calculate advanced season metrics."""
+        """Calculate advanced season metrics"""
         # Read base statistics
-        stats_df = self.spark.table("django_app_seasonteamperformances")
+        stats_df = self.spark.table("season_team_performances")
 
         # Expected Goals (xG) analysis
         xg_df = stats_df \
@@ -97,12 +73,7 @@ class SeasonAnalyticsProcessor:
                         col("goals_scored") - col("expected_goals"))
 
         # Team playing style analysis
-        style_df = self.load_data_from_mysql("django_app_matchstatistics")
-        if style_df is None:
-            print("Failed to load match statistics from MySQL.")
-            return
-
-        style_df = style_df \
+        style_df = self.spark.read.table("match_statistics") \
             .groupBy("team_id") \
             .agg(
             avg("pass_accuracy").alias("avg_pass_accuracy"),
